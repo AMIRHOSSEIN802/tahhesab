@@ -1,0 +1,1 @@
+{"name":"tah-hesab","version":"1.0.0","dependencies":{"axios":"^1.13.2","body-parser":"^2.2.0","express":"^5.1.0","moment-jalaali":"^0.10.4","mysql2":"^3.15.3","sequelize":"^6.37.7"}}

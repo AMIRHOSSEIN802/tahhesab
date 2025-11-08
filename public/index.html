@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+<meta charset="UTF-8">
+<title>شبیه‌ساز فاکتور</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  direction: rtl;
+  padding: 20px;
+  background-color: #f5f5f5;
+}
+h2 { text-align: center; }
+form {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 800px;
+  margin: auto;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+label { display: block; margin-top: 10px; }
+input, button { padding: 6px 10px; margin-top: 4px; width: 100%; box-sizing: border-box; }
+table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+table, th, td { border: 1px solid #ccc; }
+th, td { padding: 8px; text-align: center; }
+button.add-row { margin-top: 10px; width: auto; }
+.number-input { text-align: right; }
+</style>
+</head>
+<body>
+<h2>شبیه‌ساز فاکتور</h2>
+<form id="factorForm">
+  <label>Factor Code: <input type="text" id="factorCode" required></label>
+  <label>Mobile: <input type="text" id="mobile" required></label>
+  <label>CreatedAt: <input type="date" id="createdAt" required></label>
+
+  <h3>Details</h3>
+  <table id="detailsTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Count</th>
+        <th>Weight</th>
+        <th>Fi</th>
+        <th>عملیات</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <button type="button" class="add-row">افزودن ردیف</button>
+
+  <label>Price (محاسبه خودکار): <input type="text" id="price" readonly></label>
+  <label>Total Weight (محاسبه خودکار): <input type="text" id="weight" readonly></label>
+
+  <button type="submit">ذخیره فاکتور</button>
+</form>
+
+<script>
+const detailsTableBody = document.querySelector('#detailsTable tbody');
+const addRowBtn = document.querySelector('.add-row');
+const priceInput = document.getElementById('price');
+const weightInput = document.getElementById('weight');
+
+function formatNumber(num) {
+  return Number(num).toLocaleString('en-US');
+}
+
+function recalcTotals() {
+  let totalPrice = 0;
+  let totalWeight = 0;
+
+  detailsTableBody.querySelectorAll('tr').forEach(tr => {
+    const countInput = tr.querySelector('.count');
+    const weightInput = tr.querySelector('.weight');
+    const fiInput = tr.querySelector('.fi');
+
+    const count = parseFloat(countInput.value) || 0;
+    const weight = parseFloat(weightInput.value) || 0;
+    const fi = parseFloat(fiInput.value.replace(/,/g,'')) || 0;
+
+    totalPrice += count * fi;
+    totalWeight += count * weight;
+
+    fiInput.value = formatNumber(fi);
+  });
+
+  priceInput.value = formatNumber(totalPrice);
+  weightInput.value = totalWeight;
+}
+
+function addRow(detail = { Name: '', count: '', weight: '', Fi: '' }) {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="text" class="name" value="${detail.Name}" required></td>
+    <td><input type="number" class="count number-input" value="${detail.count}" min="0" step="0.01" required></td>
+    <td><input type="number" class="weight number-input" value="${detail.weight}" min="0" step="0.01" required></td>
+    <td><input type="text" class="fi number-input" value="${detail.Fi}" required></td>
+    <td><button type="button" class="remove">حذف</button></td>`;
+  detailsTableBody.appendChild(tr);
+
+  const countInput = tr.querySelector('.count');
+  const weightInput = tr.querySelector('.weight');
+  const fiInput = tr.querySelector('.fi');
+
+  [countInput, weightInput, fiInput].forEach(input => {
+    input.addEventListener('input', recalcTotals);
+  });
+
+  tr.querySelector('.remove').addEventListener('click', () => {
+    tr.remove();
+    recalcTotals();
+  });
+
+  recalcTotals();
+}
+
+addRowBtn.addEventListener('click', () => addRow());
+
+document.getElementById('factorForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const factorCode = document.getElementById('factorCode').value;
+  const mobile = document.getElementById('mobile').value;
+  const createdAt = document.getElementById('createdAt').value;
+
+  const details = Array.from(detailsTableBody.querySelectorAll('tr')).map(tr => ({
+    Name: tr.querySelector('.name').value,
+    count: parseFloat(tr.querySelector('.count').value) || 0,
+    weight: parseFloat(tr.querySelector('.weight').value) || 0,
+    Fi: parseFloat(tr.querySelector('.fi').value.replace(/,/g,'')) || 0
+  }));
+
+  const price = details.reduce((sum,d)=>sum+d.Fi*d.count,0);
+  const weight = details.reduce((sum,d)=>sum+d.weight*d.count,0);
+
+  const payload = { Factor_Code: factorCode, mobile, ZamanSabt: createdAt, details, price, weight };
+
+  try {
+    const res = await fetch('/factor/save-factor', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    alert('فاکتور ذخیره شد');
+  } catch(err) {
+    console.error(err);
+    alert('خطا در ذخیره فاکتور');
+  }
+});
+</script>
+</body>
+</html>
