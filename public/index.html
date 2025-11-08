@@ -91,7 +91,7 @@ function recalcTotals() {
 
 function addRow(detail = { Name: '', count: '', weight: '', Fi: '' }) {
   const tr = document.createElement('tr');
-  tr.innerHTML = `
+  tr.innerHTML =`
     <td><input type="text" class="name" value="${detail.Name}" required></td>
     <td><input type="number" class="count number-input" value="${detail.count}" min="0" step="0.01" required></td>
     <td><input type="number" class="weight number-input" value="${detail.weight}" min="0" step="0.01" required></td>
@@ -99,11 +99,7 @@ function addRow(detail = { Name: '', count: '', weight: '', Fi: '' }) {
     <td><button type="button" class="remove">حذف</button></td>`;
   detailsTableBody.appendChild(tr);
 
-  const countInput = tr.querySelector('.count');
-  const weightInput = tr.querySelector('.weight');
-  const fiInput = tr.querySelector('.fi');
-
-  [countInput, weightInput, fiInput].forEach(input => {
+  [tr.querySelector('.count'), tr.querySelector('.weight'), tr.querySelector('.fi')].forEach(input => {
     input.addEventListener('input', recalcTotals);
   });
 
@@ -133,7 +129,15 @@ document.getElementById('factorForm').addEventListener('submit', async (e) => {
   const price = details.reduce((sum,d)=>sum+d.Fi*d.count,0);
   const weight = details.reduce((sum,d)=>sum+d.weight*d.count,0);
 
-  const payload = { Factor_Code: factorCode, mobile, ZamanSabt: createdAt, details, price, weight };
+  const payload = {
+    Factor_Code: factorCode,
+    mobile,
+    ZamanSabt: createdAt,
+    details,
+    price,
+    weight,
+    isCheck: false  // فیلد جدید که مستقیم false هست
+  };
 
   try {
     const res = await fetch('/factor/save-factor', {
@@ -142,7 +146,15 @@ document.getElementById('factorForm').addEventListener('submit', async (e) => {
       body: JSON.stringify(payload)
     });
     const data = await res.json();
-    alert('فاکتور ذخیره شد');
+
+    if(data.success){
+      alert('فاکتور ذخیره شد');
+      document.getElementById('factorForm').reset();
+      detailsTableBody.innerHTML = '';
+      recalcTotals();
+    } else if(data.error){
+      alert(data.error); // پیام خطای فاکتور تکراری
+    }
   } catch(err) {
     console.error(err);
     alert('خطا در ذخیره فاکتور');

@@ -11,25 +11,31 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 app.post('/factor/save-factor', async (req, res) => {
   try {
-    const { Factor_Code, mobile, ZamanSabt, details } = req.body;
+    const { Factor_Code, mobile, ZamanSabt, details, price, weight, isCheck } = req.body;
 
     if (!Factor_Code || !details || !Array.isArray(details) || details.length === 0) {
       return res.status(400).json({ error: 'اطلاعات فاکتور ناقص است' });
     }
 
-    const price = details.reduce((sum, d) => sum + (Number(d.Fi) || 0), 0);
-    const weight = details.reduce((sum, d) => sum + ((Number(d.count) || 0) * (Number(d.weight) || 0)), 0);
+    // بررسی وجود فاکتور قبلی
+    const existing = await Factors.findOne({ where: { Factor_Code } });
+    if (existing) {
+      return res.json({ success: false, error: `فاکتور با کد ${Factor_Code} قبلاً ثبت شده است` });
+    }
 
-    await Factors.upsert({
+    // ذخیره فاکتور جدید
+    await Factors.create({
       Factor_Code,
       mobile,
       ZamanSabt,
       details,
       price,
-      weight
+      weight,
+      isCheck: isCheck === true // فقط برای اطمینان
     });
 
     res.json({ success: true, message: 'فاکتور با موفقیت ذخیره شد' });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'خطا در ذخیره فاکتور' });
