@@ -20,18 +20,26 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: 0,
     },
     ZamanSabt: {
-      type: DataTypes.DATE,
-      allowNull: true,
+      type: DataTypes.STRING,
+      allowNull: false,
     },
     details: {
       type: DataTypes.JSON,
       allowNull: false,
       defaultValue: [],
     },
-     isCheck: {
+    isCheck: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: false
+    }
+  });
+
+  Factors.beforeCreate((factor, options) => {
+    if (factor.ZamanSabt) {
+      factor.ZamanSabt = `${factor.ZamanSabt} 00:00:00`;
+    } else {
+      factor.ZamanSabt = "00:00:00";
     }
   });
 

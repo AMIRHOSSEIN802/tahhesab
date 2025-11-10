@@ -3,192 +3,280 @@
 <head>
   <meta charset="UTF-8">
   <title>شبیه‌ساز فاکتور</title>
+
+  <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/font-face.css" rel="stylesheet" />
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/persian-datepicker/dist/css/persian-datepicker.min.css" />
+
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: Vazir, Arial, sans-serif;
       direction: rtl;
       padding: 20px;
-      background-color: #f5f5f5;
+      background-color: #f0f4f8;
+      color: #333;
     }
-    h2, h3 { text-align: center; }
+
+    h2, h3 { text-align: center; margin-bottom: 10px; }
     form {
       background-color: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      max-width: 800px;
+      padding: 25px;
+      border-radius: 10px;
+      max-width: 900px;
       margin: auto;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
     }
-    label { display: block; margin-top: 10px; }
-    input, button { padding: 6px 10px; margin-top: 4px; width: 100%; box-sizing: border-box; }
-    button.add-row { margin-top: 10px; width: auto; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    table, th, td { border: 1px solid #ccc; }
-    th, td { padding: 8px; text-align: center; }
+    label { display: block; margin-top: 15px; font-weight: bold; }
+    input, button {
+      padding: 8px 12px;
+      margin-top: 6px;
+      width: 100%;
+      box-sizing: border-box;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button.add-row { width: auto; background-color: #3f51b5; color: #fff; border: none; cursor: pointer; }
+    button.add-row:hover { background-color: #303f9f; }
+    button[type="submit"] { background-color: #4caf50; color: #fff; border: none; cursor: pointer; }
+    button[type="submit"]:hover { background-color: #388e3c; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; }
+    table, th, td { border: 1px solid #ddd; }
+    th,td { padding: 10px; text-align: center; }
+    td.details-cell { white-space: pre-line; text-align: left; max-width: 300px; }
+
+    input.price { text-align: right; }
   </style>
 </head>
 <body>
-  <h2>شبیه‌ساز فاکتور</h2>
 
-  <!-- فرم فاکتور -->
-  <form id="factorForm">
-    <label>Factor Code:
-      <input type="text" id="factorCode" required>
-    </label>
-    <label>Mobile:
-      <input type="text" id="mobile" required>
-    </label>
-    <label>CreatedAt:
-      <input type="date" id="createdAt" required>
-    </label>
+<h2>شبیه‌ساز فاکتور</h2>
 
-    <h3>Details</h3>
-    <table id="detailsTable">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Count</th>
-          <th>Weight</th>
-          <th>Fi</th>
-          <th>عملیات</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-    <button type="button" class="add-row">افزودن ردیف</button>
+<form id="factorForm">
 
-    <label>Price (محاسبه خودکار):
-      <input type="number" id="price" readonly>
-    </label>
-    <label>Total Weight (محاسبه خودکار):
-      <input type="number" id="weight" readonly>
-    </label>
 
-    <button type="submit">ذخیره فاکتور</button>
-  </form>
+  <label>شماره تلفن همراه:
+    <input type="text" id="mobile" required>
+  </label>
 
-  <!-- جدول فاکتورهای ذخیره شده -->
-  <h3>فاکتورهای ذخیره شده</h3>
-  <table id="savedFactorsTable">
+  <label>تاریخ صدور فاکتور:
+    <input type="text" id="createdAt" class="persian-date" readonly required>
+  </label>
+
+  <h3>جزئیات فاکتور</h3>
+
+  <table id="detailsTable">
     <thead>
       <tr>
-        <th>Factor Code</th>
-        <th>Mobile</th>
-        <th>Created At</th>
-        <th>Details</th>
-        <th>Price</th>
-        <th>Total Weight</th>
+        <th>نام کالا</th>
+        <th>تعداد</th>
+        <th>وزن</th>
+        <th>قیمت</th>
+        <th>عملیات</th>
       </tr>
     </thead>
     <tbody></tbody>
   </table>
 
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const detailsTableBody = document.querySelector('#detailsTable tbody');
-      const addRowBtn = document.querySelector('.add-row');
-      const priceInput = document.getElementById('price');
-      const weightInput = document.getElementById('weight');
-      const savedTableBody = document.querySelector('#savedFactorsTable tbody');
+  <button type="button" class="add-row">افزودن ردیف</button>
 
-      function recalcTotals() {
+  <label>قیمت کل:
+    <input type="text" id="price" readonly>
+  </label>
+
+  <label>وزن کل:
+    <input type="number" id="weight" readonly>
+  </label>
+
+  <button type="submit">ذخیره فاکتور</button>
+</form>
+
+<h3>فاکتورهای ثبت‌شده</h3>
+
+<table id="savedFactors">
+  <thead>
+    <tr>
+      <th>شماره فاکتور</th>
+      <th>شماره تلفن</th>
+      <th>تاریخ</th>
+      <th>جزئیات</th>
+      <th>قیمت کل</th>
+      <th>وزن کل</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<!-- اسکریپت‌ها -->
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/persian-date/dist/persian-date.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/persian-datepicker/dist/js/persian-datepicker.js"></script>
+
+<script>
+
+let issuedDate = null;
+
+$(function() {
+  $(".persian-date").persianDatepicker({
+    format: 'YYYY/MM/DD',
+    initialValue: false,
+    autoClose: true,
+    onSelect: function(unix) {
+      issuedDate = new persianDate(unix).format("YYYY/MM/DD");
+      $("#createdAt").val(issuedDate);
+    }
+  });
+
+  loadUncheckedFactors();
+});
+
+document.querySelector(".add-row").addEventListener("click", () => addRow());
+
+function addRow() {
+  const tr = document.createElement("tr");
+
+  tr.innerHTML = `
+      <td><input type="text" class="name" required></td>
+      <td><input type="number" class="count" min="0" required></td>
+      <td><input type="number" class="weight" step="0.01" min="0" required></td>
+      <td><input type="text" class="price" required></td>
+      <td><button type="button" class="remove">حذف</button></td>
+  `;
+
+  document.querySelector("#detailsTable tbody").appendChild(tr);
+
+  tr.querySelector(".remove").addEventListener("click", () => {
+      tr.remove();
+      recalcTotals();
+  });
+
+  tr.querySelectorAll("input").forEach(input => {
+      input.addEventListener("input", recalcTotals);
+  });
+
+  tr.querySelector(".price").addEventListener("input", e => {
+      let raw = e.target.value.replace(/,/g, "");
+      raw = Number(raw) || 0;
+      e.target.value = raw.toLocaleString("en-US");
+      recalcTotals();
+  });
+}
+
+
+function recalcTotals() {
+  let totalPrice = 0;
+  let totalWeight = 0;
+
+  document.querySelectorAll("#detailsTable tbody tr").forEach(tr => {
+      const count = parseFloat(tr.querySelector(".count").value) || 0;
+      const weight = parseFloat(tr.querySelector(".weight").value) || 0;
+      const price = parseFloat(tr.querySelector(".price").value.replace(/,/g, "")) || 0;
+
+      totalPrice += count * price;
+      totalWeight += count * weight;
+  });
+
+  document.getElementById("price").value = totalPrice.toLocaleString("en-US");
+  document.getElementById("weight").value = totalWeight;
+}
+
+
+$("#factorForm").submit(function(e) {
+    e.preventDefault();
+
+    const factorData = {
+        Factor_Code: $("#factorCode").val(),
+        mobile: $("#mobile").val(),
+        ZamanSabt: convertToEnglishNumbers(issuedDate),
+        details: []
+    };
+
+    $("#detailsTable tbody tr").each(function() {
+        factorData.details.push({
+            Name: $(this).find(".name").val(),
+            count: $(this).find(".count").val(),
+            weight: $(this).find(".weight").val(),
+            Fi: $(this).find(".price").val().replace(/,/g, "")
+        });
+    });
+
+    $.ajax({
+        url: "/factor/save-factor",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify(factorData),
+        success: function(res) {
+            if (res.success) {
+                alert("فاکتور با موفقیت ذخیره شد");
+
+                loadUncheckedFactors();
+
+                $("#factorForm")[0].reset();
+                $("#detailsTable tbody").empty();
+                issuedDate = null;
+            } else {
+                alert("خطا: " + res.error);
+            }
+        }
+    });
+});
+
+function convertToEnglishNumbers(str) {
+    if (!str) return str;
+    return str.replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d));
+}
+
+
+function loadUncheckedFactors() {
+    $.ajax({
+        url: "/factor/list",
+        type: "GET",
+        success: function(res) {
+            if (res.success) {
+                renderFactors(res.data);
+            }
+        }
+    });
+}
+
+
+function renderFactors(list) {
+    const tbody = $("#savedFactors tbody");
+    tbody.empty();
+
+    if (list.length === 0) {
+        tbody.append("<tr><td colspan='6'>هیچ فاکتوری برای نمایش وجود ندارد.</td></tr>");
+        return;
+    }
+
+    list.forEach(f => {
+        let detailsArray = f.details;
+
         let totalPrice = 0;
         let totalWeight = 0;
-        detailsTableBody.querySelectorAll('tr').forEach(tr => {
-          const count = parseFloat(tr.querySelector('.count').value) || 0;
-          const weight = parseFloat(tr.querySelector('.weight').value) || 0;
-          const fi = parseFloat(tr.querySelector('.fi').value) || 0;
-          totalPrice += count * fi;
-          totalWeight += count * weight;
-        });
-        priceInput.value = totalPrice;
-        weightInput.value = totalWeight;
-      }
 
-      function addRow(detail = { Name: '', count: '', weight: '', Fi: '' }) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><input type="text" class="name" value="${detail.Name}" required></td>
-          <td><input type="number" class="count" value="${detail.count}" min="0" required></td>
-          <td><input type="number" class="weight" value="${detail.weight}" min="0" step="0.01" required></td>
-          <td><input type="number" class="fi" value="${detail.Fi}" min="0" required></td>
-          <td><button type="button" class="remove">حذف</button></td>
-        `;
-        detailsTableBody.appendChild(tr);
+        const detailsHtml = detailsArray.map(d => {
+            totalPrice += Number(d.count) * Number(d.Fi);
+            totalWeight += Number(d.count) * Number(d.weight);
 
-        tr.querySelectorAll('input').forEach(input => input.addEventListener('input', recalcTotals));
-        tr.querySelector('.remove').addEventListener('click', () => {
-          tr.remove();
-          recalcTotals();
-        });
-      }
+            return `${d.Name} | تعداد: ${d.count} | وزن: ${d.weight} | قیمت: ${Number(d.Fi).toLocaleString("en-US")}`;
+        }).join("<br>");
 
-      addRowBtn.addEventListener('click', () => addRow());
-
-      function addFactorToTable(factor) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${factor.Factor_Code}</td>
-          <td>${factor.mobile}</td>
-          <td>${factor.ZamanSabt}</td>
-          <td>${factor.details.map(d => `${d.Name} (${d.count}x${d.weight}, Fi:${d.Fi})`).join('<br>')}</td>
-          <td>${factor.price}</td>
-          <td>${factor.weight}</td>
-        `;
-        savedTableBody.appendChild(tr);
-      }
-
-      document.getElementById('factorForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const factorCode = document.getElementById('factorCode').value;
-        const mobile = document.getElementById('mobile').value;
-        const createdAt = document.getElementById('createdAt').value;
-
-        const details = Array.from(detailsTableBody.querySelectorAll('tr')).map(tr => ({
-          Name: tr.querySelector('.name').value,
-          count: parseFloat(tr.querySelector('.count').value) || 0,
-          weight: parseFloat(tr.querySelector('.weight').value) || 0,
-          Fi: parseFloat(tr.querySelector('.fi').value) || 0
-        }));
-
-        const price = details.reduce((sum, d) => sum + d.Fi * d.count, 0);
-        const weight = details.reduce((sum, d) => sum + d.weight * d.count, 0);
-
-        const payload = {
-          Factor_Code: factorCode,
-          mobile,
-          ZamanSabt: createdAt,
-          details,
-          price,
-          weight
-        };
-
-        try {
-          const res = await fetch('/factor/save-factor', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-
-          const data = await res.json();
-
-          if (res.ok) {
-            alert('✅ فاکتور ذخیره شد');
-            addFactorToTable(payload);
-            document.getElementById('factorForm').reset();
-            detailsTableBody.innerHTML = '';
-            priceInput.value = '';
-            weightInput.value = '';
-          } else {
-            alert('❌ خطا: ' + (data.error || 'خطای نامعلوم'));
-          }
-        } catch (err) {
-          console.error(err);
-          alert('❌ خطا در اتصال به سرور');
-        }
-      });
+        tbody.append(`
+            <tr>
+                <td>${f.Factor_Code}</td>
+                <td>${f.mobile}</td>
+                <td>${f.ZamanSabt}</td>
+                <td class="details-cell">${detailsHtml}</td>
+                <td>${totalPrice.toLocaleString("en-US")}</td>
+                <td>${totalWeight}</td>
+            </tr>
+        `);
     });
-  </script>
+}
+
+
+</script>
+
 </body>
 </html>

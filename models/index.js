@@ -7,11 +7,16 @@ const sequelize = new Sequelize('fadakTest', 'root', 'Et3uuKLaY2yJxSEESTwboqju',
   logging: false
 });
 
-const db = {};
-db.Sequelize = Sequelize;
-db.sequelize = sequelize;
+const Factors = require('./Factors')(sequelize, DataTypes);
+const LastRequest = require('./LastRequest')(sequelize, DataTypes);
+const Counter = require('./Counter')(sequelize, DataTypes);
 
-db.Factors = require('./Factors')(sequelize, DataTypes);
-db.LastRequest = require('./LastRequest')(sequelize, DataTypes);
+const db = {
+  sequelize,
+  Sequelize,
+  Factors,
+  LastRequest,
+  Counter
+};
 
 module.exports = db;

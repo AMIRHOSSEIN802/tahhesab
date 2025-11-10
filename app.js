@@ -1,46 +1,73 @@
 const express = require('express');
 const path = require('path');
-const { sequelize, Factors } = require('./models'); 
 const bodyParser = require('body-parser');
-const {fetchAndSave} = require('./routes/flow');
+const { sequelize, Factors, Counter } = require('./models'); 
+const { fetchAndSave } = require('./routes/flow');
 
 const app = express();
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.post('/factor/save-factor', async (req, res) => {
+  const t = await sequelize.transaction();
   try {
-    const { Factor_Code, mobile, ZamanSabt, details, price, weight, isCheck } = req.body;
+    const { mobile, ZamanSabt, details } = req.body;
 
-    if (!Factor_Code || !details || !Array.isArray(details) || details.length === 0) {
+    if (!details || !Array.isArray(details) || details.length === 0) {
+      await t.rollback();
       return res.status(400).json({ error: 'اطلاعات فاکتور ناقص است' });
     }
 
-    // بررسی وجود فاکتور قبلی
-    const existing = await Factors.findOne({ where: { Factor_Code } });
-    if (existing) {
-      return res.json({ success: false, error: `فاکتور با کد ${Factor_Code} قبلاً ثبت شده است` });
-    }
+    const price = details.reduce((sum, d) => sum + (Number(d.Fi) || 0) * (Number(d.count) || 0), 0);
+    const weight = details.reduce((sum, d) => sum + (Number(d.count) || 0) * (Number(d.weight) || 0), 0);
 
-    // ذخیره فاکتور جدید
-    await Factors.create({
+    const [ctr] = await Counter.findOrCreate({
+      where: { name: 'factor_code' },
+      defaults: { value: 0 },
+      transaction: t,
+      lock: t.LOCK.UPDATE
+    });
+
+    await ctr.increment('value', { by: 1, transaction: t });
+    await ctr.reload({ transaction: t });
+    const nextNumber = ctr.value;
+    const Factor_Code = `F-${String(nextNumber).padStart(6, '0')}`;
+
+    const saved = await Factors.create({
       Factor_Code,
       mobile,
       ZamanSabt,
       details,
       price,
       weight,
-      isCheck: isCheck === true // فقط برای اطمینان
-    });
+      isCheck: false
+    }, { transaction: t });
 
-    res.json({ success: true, message: 'فاکتور با موفقیت ذخیره شد' });
+    await t.commit();
+    return res.json({ success: true, message: 'فاکتور با موفقیت ذخیره شد', code: saved.Factor_Code });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'خطا در ذخیره فاکتور' });
+    await t.rollback();
+    console.error(' خطا در ذخیره فاکتور:', err);
+    return res.status(500).json({ success: false, error: 'server' });
   }
 });
+
+app.get("/factor/list", async (req, res) => {
+  try {
+    const list = await Factors.findAll({
+      where: { isCheck: false },
+      order: [['createdAt', 'DESC']]
+    });
+    res.json({ success: true, data: list });
+  } catch (err) {
+    console.error("خطا در دریافت فاکتورها:", err);
+    res.status(500).json({ success: false, error: "server" });
+  }
+});
+
 app.post('/run-flow', async (req, res) => {
   try {
     await fetchAndSave();
@@ -50,14 +77,11 @@ app.post('/run-flow', async (req, res) => {
   }
 });
 
-
-app.use(express.static(path.join(__dirname, 'public')));
-
 const PORT = 3001;
 app.listen(PORT, async () => {
   try {
     await sequelize.authenticate();
-    await sequelize.sync({force: true});
+    await sequelize.sync(); 
     console.log('اتصال به دیتابیس موفقیت‌آمیز بود');
   } catch (err) {
     console.error('خطا در اتصال به دیتابیس:', err);
